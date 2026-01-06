@@ -27,14 +27,14 @@ const { bash, tools } = await createBashTool({
 const result = await generateText({
   model: yourModel,
   tools: { bash },
-  prompt: "List all TypeScript files",
+  prompt: "Summarize the data",
 });
 
 // Or use all tools (bash, readFile, writeFile)
 const result2 = await generateText({
   model: yourModel,
   tools,
-  prompt: "Read the package.json file",
+  prompt: "Generate a markdown table of shirt colors",
 });
 ```
 
