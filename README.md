@@ -69,13 +69,13 @@ Use `Sandbox.get` to reconnect to an existing sandbox by ID:
 import { Sandbox } from "@vercel/sandbox";
 
 // First invocation: create sandbox and store the ID
-const sandbox = await Sandbox.create();
-const sandboxId = sandbox.sandboxId;
+const newSandbox = await Sandbox.create();
+const sandboxId = newSandbox.sandboxId;
 // Store sandboxId in database, session, or return to client
 
 // Subsequent invocations: reconnect to existing sandbox
-const sandbox = await Sandbox.get({ sandboxId });
-const { tools } = await createBashTool({ sandbox });
+const existingSandbox = await Sandbox.get({ sandboxId });
+const { tools } = await createBashTool({ sandbox: existingSandbox });
 // All previous files and state are preserved
 ```
 
@@ -91,13 +91,21 @@ const { tools } = await createBashTool({
 });
 ```
 
-### Track tool calls
+### Intercept bash commands
 
 ```typescript
 const { tools } = await createBashTool({
-  files: { "index.ts": "export const x = 1;" },
-  onCall: (toolName, args) => {
-    console.log(`Tool called: ${toolName}`, args);
+  onBeforeBashCall: ({ command }) => {
+    console.log("Running:", command);
+    // Optionally modify the command
+    if (command.includes("rm -rf")) {
+      return { command: "echo 'Blocked dangerous command'" };
+    }
+  },
+  onAfterBashCall: ({ command, result }) => {
+    console.log(`Exit code: ${result.exitCode}`);
+    // Optionally modify the result
+    return { result: { ...result, stdout: result.stdout.trim() } };
   },
 });
 ```
@@ -109,13 +117,15 @@ import { createBashTool, Sandbox } from "bash-tool";
 
 const customSandbox: Sandbox = {
   async executeCommand(command) {
-    // Return { stdout, stderr, exitCode }
+    // Your implementation here
+    return { stdout: "", stderr: "", exitCode: 0 };
   },
   async readFile(path) {
-    // Return file contents
+    // Your implementation here
+    return "";
   },
   async writeFile(path, content) {
-    // Write file
+    // Your implementation here
   },
 };
 
