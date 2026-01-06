@@ -29,3 +29,5 @@ coverage/
 
 # Project specific
 todo/
+
+tsconfig.build.json
