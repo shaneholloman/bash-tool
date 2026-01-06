@@ -1,3 +1,5 @@
+import type { Sandbox as VercelSandbox } from "@vercel/sandbox";
+
 export interface CommandResult {
   stdout: string;
   stderr: string;
@@ -8,6 +10,19 @@ export interface Sandbox {
   executeCommand(command: string): Promise<CommandResult>;
   readFile(path: string): Promise<string>;
   writeFile(path: string, content: string): Promise<void>;
+}
+
+/**
+ * Duck-typed just-bash Bash instance.
+ * We detect this by checking for the exec method.
+ */
+export interface JustBashInstance {
+  exec: (command: string) => Promise<{
+    stdout: string;
+    stderr: string;
+    exitCode: number;
+  }>;
+  [key: string]: unknown;
 }
 
 export interface CreateBashToolOptions {
@@ -44,7 +59,7 @@ export interface CreateBashToolOptions {
    * Accepts a @vercel/sandbox instance, just-bash Bash instance,
    * or any object implementing Sandbox.
    */
-  sandbox?: Sandbox | VercelSandboxInstance | JustBashInstance;
+  sandbox?: Sandbox | VercelSandbox | JustBashInstance;
 
   /**
    * Additional instructions to append to tool descriptions.
@@ -75,24 +90,6 @@ export interface BashToolkit {
 }
 
 /**
- * Duck-typed @vercel/sandbox instance.
- * We detect this by checking for characteristic properties.
+ * Re-export @vercel/sandbox Sandbox type for convenience.
  */
-export interface VercelSandboxInstance {
-  shells?: unknown;
-  kill?: () => Promise<void>;
-  [key: string]: unknown;
-}
-
-/**
- * Duck-typed just-bash Bash instance.
- * We detect this by checking for the exec method.
- */
-export interface JustBashInstance {
-  exec: (command: string) => Promise<{
-    stdout: string;
-    stderr: string;
-    exitCode: number;
-  }>;
-  [key: string]: unknown;
-}
+export type { Sandbox as VercelSandboxInstance } from "@vercel/sandbox";

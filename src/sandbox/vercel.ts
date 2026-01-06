@@ -1,65 +1,79 @@
-import type {
-  CommandResult,
-  Sandbox,
-  VercelSandboxInstance,
-} from "../types.js";
+import type { CommandResult, Sandbox } from "../types.js";
+
+/**
+ * Minimal interface for the @vercel/sandbox methods we actually use.
+ * This allows proper typing without requiring the full class.
+ */
+export interface VercelSandboxLike {
+  sandboxId: string;
+  runCommand: (
+    command: string,
+    args?: string[],
+  ) => Promise<{
+    exitCode: number;
+    stdout: (opts?: { signal?: AbortSignal }) => Promise<string>;
+    stderr: (opts?: { signal?: AbortSignal }) => Promise<string>;
+  }>;
+  readFile: (file: { path: string }) => Promise<NodeJS.ReadableStream | null>;
+  writeFiles: (files: { path: string; content: Buffer }[]) => Promise<void>;
+}
 
 /**
  * Check if an object is a @vercel/sandbox instance using duck-typing.
  */
-export function isVercelSandbox(obj: unknown): obj is VercelSandboxInstance {
+export function isVercelSandbox(obj: unknown): obj is VercelSandboxLike {
   if (!obj || typeof obj !== "object") return false;
   const candidate = obj as Record<string, unknown>;
-  // @vercel/sandbox has characteristic properties like shells, kill, etc.
-  return typeof candidate.kill === "function" && "shells" in candidate;
+  // @vercel/sandbox Sandbox class has these characteristic properties
+  return (
+    typeof candidate.sandboxId === "string" &&
+    typeof candidate.runCommand === "function" &&
+    typeof candidate.readFile === "function" &&
+    typeof candidate.writeFiles === "function"
+  );
+}
+
+/**
+ * Helper to read a stream into a string.
+ */
+async function streamToString(stream: NodeJS.ReadableStream): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString("utf-8");
 }
 
 /**
  * Wraps a @vercel/sandbox instance to conform to our Sandbox interface.
  */
-export function wrapVercelSandbox(
-  vercelSandbox: VercelSandboxInstance,
-): Sandbox {
+export function wrapVercelSandbox(vercelSandbox: VercelSandboxLike): Sandbox {
   return {
     async executeCommand(command: string): Promise<CommandResult> {
-      // @vercel/sandbox uses shells.spawn or similar
-      const shells = vercelSandbox.shells as {
-        spawn: (
-          cmd: string,
-          args?: string[],
-        ) => Promise<{
-          stdout: string;
-          stderr: string;
-          exitCode: number;
-        }>;
-      };
-
-      const result = await shells.spawn("bash", ["-c", command]);
+      const result = await vercelSandbox.runCommand("bash", ["-c", command]);
+      const [stdout, stderr] = await Promise.all([
+        result.stdout(),
+        result.stderr(),
+      ]);
       return {
-        stdout: result.stdout,
-        stderr: result.stderr,
+        stdout,
+        stderr,
         exitCode: result.exitCode,
       };
     },
 
     async readFile(filePath: string): Promise<string> {
-      const files = vercelSandbox.files as {
-        read: (path: string) => Promise<string | null>;
-      };
-
-      const content = await files.read(filePath);
-      if (content === null) {
+      const stream = await vercelSandbox.readFile({ path: filePath });
+      if (stream === null) {
         throw new Error(`File not found: ${filePath}`);
       }
-      return content;
+      return streamToString(stream);
     },
 
     async writeFile(filePath: string, content: string): Promise<void> {
-      const files = vercelSandbox.files as {
-        write: (path: string, content: string) => Promise<void>;
-      };
-
-      await files.write(filePath, content);
+      await vercelSandbox.writeFiles([
+        { path: filePath, content: Buffer.from(content, "utf-8") },
+      ]);
     },
   };
 }

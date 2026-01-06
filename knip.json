@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "project": ["src/**/*.ts"],
-  "ignore": ["dist/**"],
-  "ignoreDependencies": ["just-bash"]
+  "ignore": ["dist/**", "src/**/*.test-d.ts"],
+  "ignoreDependencies": ["just-bash", "@vercel/sandbox"]
 }
