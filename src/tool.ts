@@ -68,6 +68,8 @@ export async function createBashTool(
   let sandbox: Sandbox;
   let usingJustBash = false;
 
+  let fileWrittenPromise: Promise<void> | undefined;
+
   if (options.sandbox) {
     // Check @vercel/sandbox first (more specific check)
     if (isVercelSandbox(options.sandbox)) {
@@ -84,7 +86,7 @@ export async function createBashTool(
       ([filePath, content]) => ({ path: filePath, content }),
     );
     if (filesToWrite.length > 0) {
-      await sandbox.writeFiles(filesToWrite);
+      fileWrittenPromise = sandbox.writeFiles(filesToWrite);
     }
   } else {
     // Create just-bash sandbox with files
@@ -97,12 +99,15 @@ export async function createBashTool(
 
   // 4. Discover available tools and generate prompt
   const fileList = Object.keys(loadedFiles);
-  const toolPrompt = await createToolPrompt({
-    sandbox,
-    filenames: fileList,
-    isJustBash: usingJustBash,
-    toolPrompt: options.promptOptions?.toolPrompt,
-  });
+  const [toolPrompt, _] = await Promise.all([
+    createToolPrompt({
+      sandbox,
+      filenames: fileList,
+      isJustBash: usingJustBash,
+      toolPrompt: options.promptOptions?.toolPrompt,
+    }),
+    fileWrittenPromise,
+  ]);
 
   // 5. Create tools
   const bash = createBashExecuteTool({

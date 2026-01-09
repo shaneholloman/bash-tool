@@ -62,7 +62,7 @@ describe("createBashTool @vercel/sandbox integration", () => {
       assert(tools.bash.execute, "bash.execute should be defined");
       const result = (await tools.bash.execute(
         { command: "ls -la" },
-        opts
+        opts,
       )) as CommandResult;
 
       expect(result.exitCode).toBe(0);
@@ -82,16 +82,17 @@ describe("createBashTool @vercel/sandbox integration", () => {
       assert(tools.bash.execute, "bash.execute should be defined");
       const result = (await tools.bash.execute(
         { command: "ls src" },
-        opts
+        opts,
       )) as CommandResult;
 
+      expect(result.stderr).toBe("");
       expect(result.exitCode).toBe(0);
       expect(result.stdout.trim()).toBe("index.ts\nutils");
     }, 30000);
   });
 
   describe("find command", () => {
-    it("find . -name '*.ts' finds TypeScript files", async () => {
+    it(`find . -name '*.ts' finds TypeScript files`, async () => {
       const dest = uniqueDir();
       const { tools } = await createBashTool({
         sandbox: vercelSandbox,
@@ -102,9 +103,10 @@ describe("createBashTool @vercel/sandbox integration", () => {
       assert(tools.bash.execute, "bash.execute should be defined");
       const result = (await tools.bash.execute(
         { command: "find . -name '*.ts'" },
-        opts
+        opts,
       )) as CommandResult;
 
+      expect(result.stderr).toBe("");
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("index.ts");
       expect(result.stdout).toContain("helpers.ts");
@@ -112,7 +114,7 @@ describe("createBashTool @vercel/sandbox integration", () => {
       expect(result.stdout).not.toContain("package.json");
     }, 30000);
 
-    it("find . -name '*.json' finds JSON files", async () => {
+    it(`find . -name '*.json' finds JSON files`, async () => {
       const dest = uniqueDir();
       const { tools } = await createBashTool({
         sandbox: vercelSandbox,
@@ -123,11 +125,11 @@ describe("createBashTool @vercel/sandbox integration", () => {
       assert(tools.bash.execute, "bash.execute should be defined");
       const result = (await tools.bash.execute(
         { command: "find . -name '*.json'" },
-        opts
+        opts,
       )) as CommandResult;
-
+      expect(result.stderr).toBe("");
       expect(result.exitCode).toBe(0);
-      expect(result.stdout.trim()).toBe("./package.json");
+      expect(result.stdout).toBe("./package.json\n");
     }, 30000);
   });
 
@@ -143,7 +145,7 @@ describe("createBashTool @vercel/sandbox integration", () => {
       assert(tools.bash.execute, "bash.execute should be defined");
       const result = (await tools.bash.execute(
         { command: "grep -r 'export' ." },
-        opts
+        opts,
       )) as CommandResult;
 
       expect(result.stderr).toBe("");
@@ -164,12 +166,12 @@ describe("createBashTool @vercel/sandbox integration", () => {
       assert(tools.bash.execute, "bash.execute should be defined");
       const result = (await tools.bash.execute(
         { command: "grep -r 'hello' ." },
-        opts
+        opts,
       )) as CommandResult;
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout.trim()).toBe(
-        './src/index.ts:export const hello = "world";'
+        './src/index.ts:export const hello = "world";',
       );
     }, 30000);
   });
@@ -186,7 +188,7 @@ describe("createBashTool @vercel/sandbox integration", () => {
       assert(tools.bash.execute, "bash.execute should be defined");
       const result = (await tools.bash.execute(
         { command: "cat src/index.ts" },
-        opts
+        opts,
       )) as CommandResult;
 
       expect(result.exitCode).toBe(0);
@@ -204,12 +206,12 @@ describe("createBashTool @vercel/sandbox integration", () => {
       assert(tools.bash.execute, "bash.execute should be defined");
       const result = (await tools.bash.execute(
         { command: "cat package.json" },
-        opts
+        opts,
       )) as CommandResult;
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toBe(
-        '{"name": "test-project", "version": "1.0.0"}'
+        '{"name": "test-project", "version": "1.0.0"}',
       );
     }, 30000);
   });
@@ -225,7 +227,7 @@ describe("createBashTool @vercel/sandbox integration", () => {
       assert(tools.bash.execute, "bash.execute should be defined");
       const result = (await tools.bash.execute(
         { command: "pwd" },
-        opts
+        opts,
       )) as CommandResult;
 
       expect(result.exitCode).toBe(0);
@@ -243,7 +245,7 @@ describe("createBashTool @vercel/sandbox integration", () => {
       assert(tools.bash.execute, "bash.execute should be defined");
       const result = (await tools.bash.execute(
         { command: "pwd" },
-        opts
+        opts,
       )) as CommandResult;
 
       expect(result.exitCode).toBe(0);
@@ -263,7 +265,7 @@ describe("createBashTool @vercel/sandbox integration", () => {
       assert(tools.readFile.execute, "readFile.execute should be defined");
       const result = (await tools.readFile.execute(
         { path: `${dest}/src/index.ts` },
-        opts
+        opts,
       )) as { content: string };
 
       expect(result.content).toBe('export const hello = "world";');
@@ -287,12 +289,12 @@ describe("createBashTool @vercel/sandbox integration", () => {
           path: "newfile.txt",
           content: "Hello, World!",
         },
-        opts
+        opts,
       );
 
       const result = (await tools.bash.execute(
         { command: "cat newfile.txt" },
-        opts
+        opts,
       )) as CommandResult;
 
       expect(result.stdout).toBe("Hello, World!");

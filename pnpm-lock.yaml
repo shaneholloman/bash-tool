@@ -23,8 +23,8 @@ devDependencies:
     specifier: ^22.10.0
     version: 22.19.3
   '@vercel/sandbox':
-    specifier: ^1.1.2
-    version: 1.1.2
+    specifier: ^1.1.6
+    version: 1.1.6
   ai:
     specifier: ^6.0.13
     version: 6.0.13(zod@3.25.76)
@@ -844,15 +844,17 @@ packages:
     resolution: {integrity: sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w==}
     engines: {node: '>= 20'}
 
-  /@vercel/sandbox@1.1.2:
-    resolution: {integrity: sha512-+YG9Xseqqf2+Da5qjHWAORizxIVHZba/1790hkDbCtRGniz/NaqUYsy4dN5OQEeYqEOwCcI3gqu0XOwLU0E/zg==}
+  /@vercel/sandbox@1.1.6:
+    resolution: {integrity: sha512-mPwgG6ng1dp2yKvYXAcugHddN+eLoLajD/9r4jlZQ/8kfJXBLFK7LR3D1NX3dZXE/v3X/1Q4d6Kna3FE1Q9Mqw==}
     dependencies:
       '@vercel/oidc': 3.1.0
       async-retry: 1.3.3
       jsonlines: 0.1.1
       ms: 2.1.3
+      picocolors: 1.1.1
       tar-stream: 3.1.7
       undici: 7.18.0
+      xdg-app-paths: 5.1.0
       zod: 3.24.4
     transitivePeerDependencies:
       - bare-abort-controller
@@ -1261,6 +1263,11 @@ packages:
     hasBin: true
     dev: true
 
+  /os-paths@4.4.0:
+    resolution: {integrity: sha512-wrAwOeXp1RRMFfQY8Sy7VaGVmPocaLwSFOYCGKSyo8qmJ+/yaafCl5BCA1IQZWqFSRBrKDYFeR9d/VyQzfH/jg==}
+    engines: {node: '>= 6.0'}
+    dev: true
+
   /oxc-resolver@11.16.2:
     resolution: {integrity: sha512-Uy76u47vwhhF7VAmVY61Srn+ouiOobf45MU9vGct9GD2ARy6hKoqEElyHDB0L+4JOM6VLuZ431KiLwyjI/A21g==}
     optionalDependencies:
@@ -1638,6 +1645,20 @@ packages:
     dependencies:
       siginfo: 2.0.0
       stackback: 0.0.2
+    dev: true
+
+  /xdg-app-paths@5.1.0:
+    resolution: {integrity: sha512-RAQ3WkPf4KTU1A8RtFx3gWywzVKe00tfOPFfl2NDGqbIFENQO4kqAJp7mhQjNj/33W5x5hiWWUdyfPq/5SU3QA==}
+    engines: {node: '>=6'}
+    dependencies:
+      xdg-portable: 7.3.0
+    dev: true
+
+  /xdg-portable@7.3.0:
+    resolution: {integrity: sha512-sqMMuL1rc0FmMBOzCpd0yuy9trqF2yTTVe+E9ogwCSWQCdDEtQUwrZPT6AxqtsFGRNxycgncbP/xmOOSPw5ZUw==}
+    engines: {node: '>= 6.0'}
+    dependencies:
+      os-paths: 4.4.0
     dev: true
 
   /zod@3.24.4:
