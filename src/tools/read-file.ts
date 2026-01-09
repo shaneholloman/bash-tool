@@ -1,3 +1,4 @@
+import nodePath from "node:path";
 import { tool } from "ai";
 import { z } from "zod";
 import type { Sandbox } from "../types.js";
@@ -8,16 +9,19 @@ const readFileSchema = z.object({
 
 export interface CreateReadFileToolOptions {
   sandbox: Sandbox;
+  /** Working directory for resolving relative paths */
+  cwd: string;
 }
 
 export function createReadFileTool(options: CreateReadFileToolOptions) {
-  const { sandbox } = options;
+  const { sandbox, cwd } = options;
 
   return tool({
     description: "Read the contents of a file from the sandbox.",
     inputSchema: readFileSchema,
     execute: async ({ path }) => {
-      const content = await sandbox.readFile(path);
+      const resolvedPath = nodePath.posix.resolve(cwd, path);
+      const content = await sandbox.readFile(resolvedPath);
       return { content };
     },
   });

@@ -1,4 +1,20 @@
-import type { CommandResult, JustBashInstance, Sandbox } from "../types.js";
+import type { CommandResult, Sandbox } from "../types.js";
+
+/**
+ * Minimal interface for the just-bash methods we actually use.
+ * This allows proper typing without requiring the full class.
+ */
+export interface JustBashLike {
+  exec: (command: string) => Promise<{
+    stdout: string;
+    stderr: string;
+    exitCode: number;
+  }>;
+  fs: {
+    readFile: (path: string) => Promise<string>;
+    writeFile: (path: string, content: string) => Promise<void>;
+  };
+}
 
 /**
  * Options for creating a just-bash sandbox.
@@ -44,28 +60,11 @@ export async function createJustBashSandbox(
     },
 
     async readFile(filePath: string): Promise<string> {
-      const result = await bashEnv.exec(`cat "${filePath}"`);
-      if (result.exitCode !== 0) {
-        throw new Error(`Failed to read file: ${filePath}\n${result.stderr}`);
-      }
-      return result.stdout;
+      return bashEnv.fs.readFile(filePath);
     },
 
     async writeFile(filePath: string, content: string): Promise<void> {
-      // Ensure parent directory exists
-      const dir = filePath.substring(0, filePath.lastIndexOf("/"));
-      if (dir) {
-        await bashEnv.exec(`mkdir -p "${dir}"`);
-      }
-
-      // Write file using heredoc to handle special characters
-      const result = await bashEnv.exec(
-        `cat > "${filePath}" << 'BASH_TOOL_EOF'\n${content}\nBASH_TOOL_EOF`,
-      );
-
-      if (result.exitCode !== 0) {
-        throw new Error(`Failed to write file: ${filePath}\n${result.stderr}`);
-      }
+      await bashEnv.fs.writeFile(filePath, content);
     },
   };
 }
@@ -73,7 +72,7 @@ export async function createJustBashSandbox(
 /**
  * Check if an object is a just-bash Bash instance using duck-typing.
  */
-export function isJustBash(obj: unknown): obj is JustBashInstance {
+export function isJustBash(obj: unknown): obj is JustBashLike {
   if (!obj || typeof obj !== "object") return false;
   const candidate = obj as Record<string, unknown>;
   // just-bash Bash class has an exec method
@@ -83,7 +82,7 @@ export function isJustBash(obj: unknown): obj is JustBashInstance {
 /**
  * Wraps a just-bash Bash instance to conform to our Sandbox interface.
  */
-export function wrapJustBash(bashInstance: JustBashInstance): Sandbox {
+export function wrapJustBash(bashInstance: JustBashLike): Sandbox {
   return {
     async executeCommand(command: string): Promise<CommandResult> {
       const result = await bashInstance.exec(command);
@@ -95,28 +94,11 @@ export function wrapJustBash(bashInstance: JustBashInstance): Sandbox {
     },
 
     async readFile(filePath: string): Promise<string> {
-      const result = await bashInstance.exec(`cat "${filePath}"`);
-      if (result.exitCode !== 0) {
-        throw new Error(`Failed to read file: ${filePath}\n${result.stderr}`);
-      }
-      return result.stdout;
+      return bashInstance.fs.readFile(filePath);
     },
 
     async writeFile(filePath: string, content: string): Promise<void> {
-      // Ensure parent directory exists
-      const dir = filePath.substring(0, filePath.lastIndexOf("/"));
-      if (dir) {
-        await bashInstance.exec(`mkdir -p "${dir}"`);
-      }
-
-      // Write file using heredoc to handle special characters
-      const result = await bashInstance.exec(
-        `cat > "${filePath}" << 'BASH_TOOL_EOF'\n${content}\nBASH_TOOL_EOF`,
-      );
-
-      if (result.exitCode !== 0) {
-        throw new Error(`Failed to write file: ${filePath}\n${result.stderr}`);
-      }
+      await bashInstance.fs.writeFile(filePath, content);
     },
   };
 }

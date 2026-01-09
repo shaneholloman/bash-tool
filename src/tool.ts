@@ -114,8 +114,8 @@ export async function createBashTool(
 
   const tools = {
     bash,
-    readFile: createReadFileTool({ sandbox }),
-    writeFile: createWriteFileTool({ sandbox }),
+    readFile: createReadFileTool({ sandbox, cwd: destination }),
+    writeFile: createWriteFileTool({ sandbox, cwd: destination }),
   };
 
   return { bash, tools, sandbox };

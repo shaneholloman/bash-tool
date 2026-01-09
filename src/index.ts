@@ -1,3 +1,4 @@
+export type { JustBashLike } from "./sandbox/just-bash.js";
 export { createBashTool } from "./tool.js";
 export type {
   BashToolCategory,
@@ -18,7 +19,6 @@ export type {
   BashToolkit,
   CommandResult,
   CreateBashToolOptions,
-  JustBashInstance,
   PromptOptions,
   Sandbox,
   VercelSandboxInstance,

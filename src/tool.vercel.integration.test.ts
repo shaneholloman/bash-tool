@@ -1,6 +1,14 @@
 import { Sandbox } from "@vercel/sandbox";
 import type { ToolExecutionOptions } from "ai";
-import { afterAll, assert, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  assert,
+  beforeAll,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import { createBashTool } from "./tool.js";
 import type { CommandResult } from "./types.js";
 
@@ -31,8 +39,20 @@ describe("createBashTool @vercel/sandbox integration", () => {
   };
 
   beforeAll(async () => {
+    console.log("Creating sandbox");
     vercelSandbox = await Sandbox.create();
   }, 60000);
+
+  afterEach(async () => {
+    if (vercelSandbox) {
+      const result = await vercelSandbox.runCommand("rm", [
+        "-rf",
+        "/vercel/sandbox/workspace",
+      ]);
+      expect(await result.stderr()).toBe("");
+      expect(result.exitCode).toBe(0);
+    }
+  });
 
   afterAll(async () => {
     if (vercelSandbox) {
@@ -126,6 +146,7 @@ describe("createBashTool @vercel/sandbox integration", () => {
         opts,
       )) as CommandResult;
 
+      expect(result.stderr).toBe("");
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("index.ts");
       expect(result.stdout).toContain("helpers.ts");
@@ -252,7 +273,7 @@ describe("createBashTool @vercel/sandbox integration", () => {
 
       await tools.writeFile.execute(
         {
-          path: "/vercel/sandbox/workspace/newfile.txt",
+          path: "newfile.txt",
           content: "Hello, World!",
         },
         opts,
@@ -263,8 +284,9 @@ describe("createBashTool @vercel/sandbox integration", () => {
         opts,
       )) as CommandResult;
 
+      expect(result.stdout).toBe("Hello, World!");
+      expect(result.stderr).toBe("");
       expect(result.exitCode).toBe(0);
-      expect(result.stdout.trim()).toBe("Hello, World!");
     }, 30000);
   });
 

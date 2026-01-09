@@ -40,6 +40,10 @@ describe("wrapJustBash", () => {
         stderr: "",
         exitCode: 0,
       }),
+      fs: {
+        readFile: async () => "",
+        writeFile: async () => {},
+      },
     };
 
     const sandbox = wrapJustBash(mockBash);
@@ -52,53 +56,39 @@ describe("wrapJustBash", () => {
     });
   });
 
-  it("wraps readFile via cat command", async () => {
+  it("wraps readFile via fs.readFile", async () => {
     const mockBash = {
-      exec: async (cmd: string) => {
-        if (cmd.includes("cat")) {
-          return { stdout: "file content", stderr: "", exitCode: 0 };
-        }
-        return { stdout: "", stderr: "", exitCode: 1 };
+      exec: async () => ({ stdout: "", stderr: "", exitCode: 0 }),
+      fs: {
+        readFile: async (path: string) => `content of ${path}`,
+        writeFile: async () => {},
       },
     };
 
     const sandbox = wrapJustBash(mockBash);
     const content = await sandbox.readFile("/test.txt");
 
-    expect(content).toBe("file content");
+    expect(content).toBe("content of /test.txt");
   });
 
-  it("throws on readFile when cat fails", async () => {
+  it("wraps writeFile via fs.writeFile", async () => {
+    const writtenFiles: Array<{ path: string; content: string }> = [];
     const mockBash = {
-      exec: async () => ({
-        stdout: "",
-        stderr: "No such file",
-        exitCode: 1,
-      }),
-    };
-
-    const sandbox = wrapJustBash(mockBash);
-    await expect(sandbox.readFile("/missing.txt")).rejects.toThrow(
-      "Failed to read file",
-    );
-  });
-
-  it("wraps writeFile via heredoc", async () => {
-    const commands: string[] = [];
-    const mockBash = {
-      exec: async (cmd: string) => {
-        commands.push(cmd);
-        return { stdout: "", stderr: "", exitCode: 0 };
+      exec: async () => ({ stdout: "", stderr: "", exitCode: 0 }),
+      fs: {
+        readFile: async () => "",
+        writeFile: async (path: string, content: string) => {
+          writtenFiles.push({ path, content });
+        },
       },
     };
 
     const sandbox = wrapJustBash(mockBash);
-    await sandbox.writeFile("/dir/test.txt", "content");
+    await sandbox.writeFile("/dir/test.txt", "my content");
 
-    expect(commands.length).toBe(2);
-    expect(commands[0]).toContain("mkdir -p");
-    expect(commands[1]).toContain("cat >");
-    expect(commands[1]).toContain("BASH_TOOL_EOF");
+    expect(writtenFiles).toEqual([
+      { path: "/dir/test.txt", content: "my content" },
+    ]);
   });
 });
 

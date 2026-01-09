@@ -20,46 +20,29 @@ let mockCwd = "/workspace";
 
 vi.mock("just-bash", () => ({
   Bash: class MockBash {
+    fs: {
+      readFile: (path: string) => Promise<string>;
+      writeFile: (path: string, content: string) => Promise<void>;
+    };
+
     constructor(options: { files?: Record<string, string>; cwd?: string }) {
       Object.assign(mockFiles, options.files || {});
       mockCwd = options.cwd || "/workspace";
+
+      this.fs = {
+        readFile: async (path: string) => {
+          if (mockFiles[path]) {
+            return mockFiles[path];
+          }
+          throw new Error(`ENOENT: no such file: ${path}`);
+        },
+        writeFile: async (path: string, content: string) => {
+          mockFiles[path] = content;
+        },
+      };
     }
 
     async exec(command: string) {
-      // Simple command parsing for tests
-      // Check heredoc write FIRST (before simple cat read)
-      if (command.includes("cat >") && command.includes("BASH_TOOL_EOF")) {
-        const match = command.match(/cat > "([^"]+)" << 'BASH_TOOL_EOF'/);
-        if (match) {
-          const filePath = match[1];
-          // Extract content between the two BASH_TOOL_EOF markers
-          const startMarker = "BASH_TOOL_EOF'\n";
-          const endMarker = "\nBASH_TOOL_EOF";
-          const startIdx = command.indexOf(startMarker) + startMarker.length;
-          const endIdx = command.lastIndexOf(endMarker);
-          const content = command.slice(startIdx, endIdx);
-          mockFiles[filePath] = content;
-          return { stdout: "", stderr: "", exitCode: 0 };
-        }
-      }
-
-      if (command.startsWith("mkdir -p")) {
-        return { stdout: "", stderr: "", exitCode: 0 };
-      }
-
-      // Simple cat read (after heredoc check)
-      if (command.startsWith("cat ")) {
-        const filePath = command.slice(4).replace(/"/g, "");
-        if (mockFiles[filePath]) {
-          return { stdout: mockFiles[filePath], stderr: "", exitCode: 0 };
-        }
-        return {
-          stdout: "",
-          stderr: `cat: ${filePath}: No such file`,
-          exitCode: 1,
-        };
-      }
-
       if (command === "ls") {
         const files = Object.keys(mockFiles).join("\n");
         return { stdout: files, stderr: "", exitCode: 0 };
@@ -165,6 +148,85 @@ describe("createBashTool", () => {
     )) as { success: boolean };
 
     expect(result.success).toBe(true);
+  });
+
+  it("readFile tool resolves relative paths against cwd", async () => {
+    const { tools } = await createBashTool({
+      files: { "test.txt": "hello world" },
+    });
+
+    assert(tools.readFile.execute, "readFile.execute should be defined");
+    // Use relative path - should resolve to /workspace/test.txt
+    const result = (await tools.readFile.execute(
+      { path: "test.txt" },
+      opts,
+    )) as { content: string };
+    expect(result.content).toBe("hello world");
+  });
+
+  it("writeFile tool resolves relative paths against cwd", async () => {
+    const { tools } = await createBashTool();
+
+    assert(tools.writeFile.execute, "writeFile.execute should be defined");
+    // Use relative path - should resolve to /workspace/relative.txt
+    await tools.writeFile.execute(
+      { path: "relative.txt", content: "relative content" },
+      opts,
+    );
+
+    expect(mockFiles["/workspace/relative.txt"]).toBe("relative content");
+  });
+
+  it("readFile tool uses custom destination for relative paths", async () => {
+    const { tools } = await createBashTool({
+      destination: "/custom/dest",
+      files: { "data.txt": "custom data" },
+    });
+
+    assert(tools.readFile.execute, "readFile.execute should be defined");
+    const result = (await tools.readFile.execute(
+      { path: "data.txt" },
+      opts,
+    )) as { content: string };
+    expect(result.content).toBe("custom data");
+  });
+
+  it("writeFile tool uses custom destination for relative paths", async () => {
+    const { tools } = await createBashTool({
+      destination: "/custom/dest",
+    });
+
+    assert(tools.writeFile.execute, "writeFile.execute should be defined");
+    await tools.writeFile.execute(
+      { path: "new.txt", content: "new data" },
+      opts,
+    );
+
+    expect(mockFiles["/custom/dest/new.txt"]).toBe("new data");
+  });
+
+  it("readFile tool preserves absolute paths", async () => {
+    mockFiles["/absolute/path/file.txt"] = "absolute content";
+    const { tools } = await createBashTool();
+
+    assert(tools.readFile.execute, "readFile.execute should be defined");
+    const result = (await tools.readFile.execute(
+      { path: "/absolute/path/file.txt" },
+      opts,
+    )) as { content: string };
+    expect(result.content).toBe("absolute content");
+  });
+
+  it("writeFile tool preserves absolute paths", async () => {
+    const { tools } = await createBashTool();
+
+    assert(tools.writeFile.execute, "writeFile.execute should be defined");
+    await tools.writeFile.execute(
+      { path: "/absolute/path/file.txt", content: "absolute content" },
+      opts,
+    );
+
+    expect(mockFiles["/absolute/path/file.txt"]).toBe("absolute content");
   });
 
   it("calls onBeforeBashCall and onAfterBashCall callbacks", async () => {

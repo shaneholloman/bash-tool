@@ -1,4 +1,5 @@
 import type { Sandbox as VercelSandbox } from "@vercel/sandbox";
+import type { JustBashLike } from "./sandbox/just-bash.js";
 
 export interface CommandResult {
   stdout: string;
@@ -10,19 +11,6 @@ export interface Sandbox {
   executeCommand(command: string): Promise<CommandResult>;
   readFile(path: string): Promise<string>;
   writeFile(path: string, content: string): Promise<void>;
-}
-
-/**
- * Duck-typed just-bash Bash instance.
- * We detect this by checking for the exec method.
- */
-export interface JustBashInstance {
-  exec: (command: string) => Promise<{
-    stdout: string;
-    stderr: string;
-    exitCode: number;
-  }>;
-  [key: string]: unknown;
 }
 
 /**
@@ -106,7 +94,7 @@ export interface CreateBashToolOptions {
    * Accepts a @vercel/sandbox instance, just-bash Bash instance,
    * or any object implementing Sandbox.
    */
-  sandbox?: Sandbox | VercelSandbox | JustBashInstance;
+  sandbox?: Sandbox | VercelSandbox | JustBashLike;
 
   /**
    * Additional instructions to append to tool descriptions.
