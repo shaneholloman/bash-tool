@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createBashExecuteTool } from "./bash.js";
+import { createBashExecuteTool, DEFAULT_MAX_OUTPUT_LENGTH } from "./bash.js";
 
 // Mock AI SDK
 vi.mock("ai", () => ({
@@ -178,5 +178,214 @@ Common operations:
   find . -name '*.ts' # Find files by pattern
   grep -r 'pattern' . # Search file contents
   cat <file>          # View file contents`);
+  });
+
+  it("truncates stdout when exceeding maxOutputLength", async () => {
+    const longOutput = "x".repeat(150);
+    mockSandbox.executeCommand.mockResolvedValue({
+      stdout: longOutput,
+      stderr: "",
+      exitCode: 0,
+    });
+
+    const tool = createBashExecuteTool({
+      sandbox: mockSandbox,
+      cwd: "/workspace",
+      maxOutputLength: 100,
+    });
+
+    // biome-ignore lint/style/noNonNullAssertion: test mock
+    const result = (await tool.execute!(
+      { command: "echo test" },
+      {} as never,
+    )) as {
+      stdout: string;
+      stderr: string;
+    };
+
+    expect(result.stdout).toBe(
+      `${"x".repeat(100)}\n\n[stdout truncated: 50 characters removed]`,
+    );
+    expect(result.stderr).toBe("");
+  });
+
+  it("truncates stderr when exceeding maxOutputLength", async () => {
+    const longError = "e".repeat(200);
+    mockSandbox.executeCommand.mockResolvedValue({
+      stdout: "",
+      stderr: longError,
+      exitCode: 1,
+    });
+
+    const tool = createBashExecuteTool({
+      sandbox: mockSandbox,
+      cwd: "/workspace",
+      maxOutputLength: 100,
+    });
+
+    // biome-ignore lint/style/noNonNullAssertion: test mock
+    const result = (await tool.execute!(
+      { command: "echo test" },
+      {} as never,
+    )) as {
+      stdout: string;
+      stderr: string;
+    };
+
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe(
+      `${"e".repeat(100)}\n\n[stderr truncated: 100 characters removed]`,
+    );
+  });
+
+  it("truncates both stdout and stderr independently", async () => {
+    mockSandbox.executeCommand.mockResolvedValue({
+      stdout: "o".repeat(80),
+      stderr: "e".repeat(80),
+      exitCode: 0,
+    });
+
+    const tool = createBashExecuteTool({
+      sandbox: mockSandbox,
+      cwd: "/workspace",
+      maxOutputLength: 50,
+    });
+
+    // biome-ignore lint/style/noNonNullAssertion: test mock
+    const result = (await tool.execute!(
+      { command: "echo test" },
+      {} as never,
+    )) as {
+      stdout: string;
+      stderr: string;
+    };
+
+    expect(result.stdout).toBe(
+      `${"o".repeat(50)}\n\n[stdout truncated: 30 characters removed]`,
+    );
+    expect(result.stderr).toBe(
+      `${"e".repeat(50)}\n\n[stderr truncated: 30 characters removed]`,
+    );
+  });
+
+  it("does not truncate when output is within limit", async () => {
+    const normalOutput = "hello world";
+    mockSandbox.executeCommand.mockResolvedValue({
+      stdout: normalOutput,
+      stderr: "",
+      exitCode: 0,
+    });
+
+    const tool = createBashExecuteTool({
+      sandbox: mockSandbox,
+      cwd: "/workspace",
+      maxOutputLength: 100,
+    });
+
+    // biome-ignore lint/style/noNonNullAssertion: test mock
+    const result = (await tool.execute!(
+      { command: "echo test" },
+      {} as never,
+    )) as {
+      stdout: string;
+      stderr: string;
+    };
+
+    expect(result.stdout).toBe(normalOutput);
+    expect(result.stderr).toBe("");
+  });
+
+  it("does not truncate when output equals maxOutputLength", async () => {
+    const exactOutput = "x".repeat(100);
+    mockSandbox.executeCommand.mockResolvedValue({
+      stdout: exactOutput,
+      stderr: "",
+      exitCode: 0,
+    });
+
+    const tool = createBashExecuteTool({
+      sandbox: mockSandbox,
+      cwd: "/workspace",
+      maxOutputLength: 100,
+    });
+
+    // biome-ignore lint/style/noNonNullAssertion: test mock
+    const result = (await tool.execute!(
+      { command: "echo test" },
+      {} as never,
+    )) as {
+      stdout: string;
+      stderr: string;
+    };
+
+    expect(result.stdout).toBe(exactOutput);
+    expect(result.stderr).toBe("");
+  });
+
+  it("uses default maxOutputLength when not specified", async () => {
+    const longOutput = "x".repeat(DEFAULT_MAX_OUTPUT_LENGTH + 100);
+    mockSandbox.executeCommand.mockResolvedValue({
+      stdout: longOutput,
+      stderr: "",
+      exitCode: 0,
+    });
+
+    const tool = createBashExecuteTool({
+      sandbox: mockSandbox,
+      cwd: "/workspace",
+    });
+
+    // biome-ignore lint/style/noNonNullAssertion: test mock
+    const result = (await tool.execute!(
+      { command: "echo test" },
+      {} as never,
+    )) as {
+      stdout: string;
+    };
+
+    expect(result.stdout).toBe(
+      `${"x".repeat(DEFAULT_MAX_OUTPUT_LENGTH)}\n\n[stdout truncated: 100 characters removed]`,
+    );
+  });
+
+  it("applies truncation before onAfterBashCall callback", async () => {
+    mockSandbox.executeCommand.mockResolvedValue({
+      stdout: "x".repeat(150),
+      stderr: "",
+      exitCode: 0,
+    });
+
+    const onAfterBashCall = vi.fn(({ result }) => ({
+      result: { ...result, stdout: `modified: ${result.stdout}` },
+    }));
+
+    const tool = createBashExecuteTool({
+      sandbox: mockSandbox,
+      cwd: "/workspace",
+      maxOutputLength: 100,
+      onAfterBashCall,
+    });
+
+    // biome-ignore lint/style/noNonNullAssertion: test mock
+    const result = (await tool.execute!(
+      { command: "echo test" },
+      {} as never,
+    )) as {
+      stdout: string;
+    };
+
+    // The callback receives the truncated output
+    expect(onAfterBashCall).toHaveBeenCalledWith({
+      command: "echo test",
+      result: {
+        stdout: `${"x".repeat(100)}\n\n[stdout truncated: 50 characters removed]`,
+        stderr: "",
+        exitCode: 0,
+      },
+    });
+    // And the final result has the callback's modification
+    expect(result.stdout).toBe(
+      `modified: ${"x".repeat(100)}\n\n[stdout truncated: 50 characters removed]`,
+    );
   });
 });

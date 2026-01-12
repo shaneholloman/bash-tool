@@ -12,6 +12,9 @@ const bashSchema = z.object({
   command: z.string().describe("The bash command to execute"),
 });
 
+/** Default maximum length for stdout/stderr output (30KB) */
+export const DEFAULT_MAX_OUTPUT_LENGTH = 30_000;
+
 export interface CreateBashToolOptions {
   sandbox: Sandbox;
   /** Working directory for command execution */
@@ -29,6 +32,27 @@ export interface CreateBashToolOptions {
   onAfterBashCall?: (
     input: AfterBashCallInput,
   ) => AfterBashCallOutput | undefined;
+  /**
+   * Maximum length (in characters) for stdout and stderr output.
+   * If output exceeds this limit, it will be truncated with a message.
+   * @default 30000
+   */
+  maxOutputLength?: number;
+}
+
+/**
+ * Truncates a string if it exceeds the maximum length, appending a truncation notice.
+ */
+function truncateOutput(
+  output: string,
+  maxLength: number,
+  streamName: "stdout" | "stderr",
+): string {
+  if (output.length <= maxLength) {
+    return output;
+  }
+  const truncatedLength = output.length - maxLength;
+  return `${output.slice(0, maxLength)}\n\n[${streamName} truncated: ${truncatedLength} characters removed]`;
 }
 
 function generateDescription(options: CreateBashToolOptions): string {
@@ -78,7 +102,13 @@ function generateDescription(options: CreateBashToolOptions): string {
 }
 
 export function createBashExecuteTool(options: CreateBashToolOptions) {
-  const { sandbox, cwd, onBeforeBashCall, onAfterBashCall } = options;
+  const {
+    sandbox,
+    cwd,
+    onBeforeBashCall,
+    onAfterBashCall,
+    maxOutputLength = DEFAULT_MAX_OUTPUT_LENGTH,
+  } = options;
 
   return tool({
     description: generateDescription(options),
@@ -98,6 +128,13 @@ export function createBashExecuteTool(options: CreateBashToolOptions) {
 
       // Execute the command
       let result = await sandbox.executeCommand(fullCommand);
+
+      // Truncate output if needed
+      result = {
+        ...result,
+        stdout: truncateOutput(result.stdout, maxOutputLength, "stdout"),
+        stderr: truncateOutput(result.stderr, maxOutputLength, "stderr"),
+      };
 
       // Allow modification of result after execution
       if (onAfterBashCall) {

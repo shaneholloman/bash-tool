@@ -1,5 +1,6 @@
 export type { JustBashLike } from "./sandbox/just-bash.js";
 export { createBashTool } from "./tool.js";
+export { DEFAULT_MAX_OUTPUT_LENGTH } from "./tools/bash.js";
 export type {
   BashToolCategory,
   BashToolInfo,

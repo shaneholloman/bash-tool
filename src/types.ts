@@ -139,6 +139,13 @@ export interface CreateBashToolOptions {
   onAfterBashCall?: (
     input: AfterBashCallInput,
   ) => AfterBashCallOutput | undefined;
+
+  /**
+   * Maximum length (in characters) for stdout and stderr output.
+   * If output exceeds this limit, it will be truncated with a message.
+   * @default 30000
+   */
+  maxOutputLength?: number;
 }
 
 // Import actual tool creators for proper typing
