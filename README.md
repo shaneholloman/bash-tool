@@ -177,7 +177,7 @@ const { tools } = await createBashTool({ sandbox: customSandbox });
 
 ## Skills (Experimental)
 
-Skills are modular capabilities that extend agent functionality. Each skill is a directory containing a `SKILL.md` file with instructions and optional scripts.
+[Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) are modular capabilities that extend agent functionality. Each skill is a directory containing a `SKILL.md` file with instructions and optional scripts.
 
 ```typescript
 import {
@@ -187,7 +187,7 @@ import {
 import { ToolLoopAgent } from "ai";
 
 // Discover skills and get files to upload
-const { loadSkill, files, instructions } = await createSkillTool({
+const { skill, files, instructions } = await createSkillTool({
   skillsDirectory: "./skills",
 });
 
@@ -200,46 +200,28 @@ const { tools } = await createBashTool({
 // Use both tools with an agent
 const agent = new ToolLoopAgent({
   model,
-  tools: { loadSkill, ...tools },
+  tools: { skill, ...tools },
 });
 ```
 
+[Full Example](./examples/skills-tool/) and see [Skills.sh for a directory of publicly available skills.](https://skills.sh/)
+
 ### Skill Directory Structure
 
-```
+```text
 skills/
 ├── csv/
-│   ├── SKILL.md      # Required: instructions with YAML frontmatter
-│   ├── analyze.sh    # Optional: scripts the agent can run
-│   └── filter.sh
+│   ├── SKILL.md         # Required: instructions with YAML frontmatter
+│   └── scripts/         # Optional: scripts the agent can run
+│       ├── analyze.sh
+│       └── filter.sh
 └── text/
     ├── SKILL.md
-    └── search.sh
+    └── scripts/
+        └── search.sh
 ```
 
-### SKILL.md Format
-
-```markdown
----
-name: csv
-description: Analyze and transform CSV files
----
-
-# CSV Processing
-
-Use `./skills/csv/analyze.sh <file>` to analyze a CSV file.
-```
-
-### How It Works
-
-1. `createSkillTool` discovers skills and returns:
-   - `loadSkill` - Tool for the agent to load a skill's instructions on demand
-   - `files` - All skill files to pass to `createBashTool`
-   - `instructions` - Extra instructions listing available skills
-
-2. The agent sees skill names in the `loadSkill` tool description
-3. When the agent needs a skill, it calls `loadSkill("csv")` to get detailed instructions
-4. The agent uses `bash` to run scripts from `./skills/csv/`
+See the [example skills](./examples/skills-tool/skills/) for a complete reference.
 
 ## AI Agent Instructions
 
