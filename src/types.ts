@@ -25,7 +25,7 @@ export interface BeforeBashCallInput {
 
 /**
  * Output from onBeforeBashCall callback.
- * Return undefined or the original input to proceed unchanged.
+ * Return nothing to proceed unchanged.
  */
 export interface BeforeBashCallOutput {
   /** The (potentially modified) command to execute */
@@ -44,7 +44,7 @@ export interface AfterBashCallInput {
 
 /**
  * Output from onAfterBashCall callback.
- * Return undefined or the original result to proceed unchanged.
+ * Return nothing to proceed unchanged.
  */
 export interface AfterBashCallOutput {
   /** The (potentially modified) result */
