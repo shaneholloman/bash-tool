@@ -31,8 +31,8 @@ importers:
         specifier: ^6.0.13
         version: 6.0.43(zod@3.25.76)
       just-bash:
-        specifier: ^2.7.0
-        version: 2.7.0
+        specifier: ^2.7.1
+        version: 2.7.1
       knip:
         specifier: ^5.80.0
         version: 5.82.1(@types/node@22.19.7)(typescript@5.9.3)
@@ -822,8 +822,8 @@ packages:
   jsonlines@0.1.1:
     resolution: {integrity: sha512-ekDrAGso79Cvf+dtm+mL8OBI2bmAOt3gssYs833De/C9NmIpWDWyUO4zPgB5x2/OhY366dkhgfPMYfwZF7yOZA==}
 
-  just-bash@2.7.0:
-    resolution: {integrity: sha512-DM9rHO5L62ALIHuWVhmhwUVqAXHVmtO4UPlFFcgVYEQTtv1Qhis43/t1aBY0Mj59vibIfNKumqy5tGraXRHsbA==}
+  just-bash@2.7.1:
+    resolution: {integrity: sha512-d9jGMJrDkmK8qlfMG2DObDxYECLmJp2k6cznmOhh1tUwm5wtFzwSvn3Cnv8vYTOLyR0u7ga11AApqUNO2WoiCQ==}
     hasBin: true
 
   kind-of@6.0.3:
@@ -1836,7 +1836,7 @@ snapshots:
 
   jsonlines@0.1.1: {}
 
-  just-bash@2.7.0:
+  just-bash@2.7.1:
     dependencies:
       '@mongodb-js/zstd': 7.0.0
       compressjs: 1.0.3
