@@ -19,7 +19,7 @@ Instructions for AI agents using bash-tool in projects.
 
 ```typescript
 import { createBashTool } from "bash-tool";
-import { ToolLoopAgent, stepCountIs } from "ai";
+import { isStepCount, ToolLoopAgent } from "ai";
 
 const { tools } = await createBashTool({
   files: {
@@ -32,13 +32,16 @@ const agent = new ToolLoopAgent({
   model,
   tools,
   // Or use just the bash tool as tools: {bash: tools.bash}
-  stopWhen: stepCountIs(20),
+  stopWhen: isStepCount(20),
 });
 
 const result = await agent.generate({
   prompt: "List files in src/",
 });
 ```
+
+With AI SDK 6, import `stepCountIs` instead of `isStepCount`, and use
+`stopWhen: stepCountIs(20)`.
 
 ## Key Behaviors
 

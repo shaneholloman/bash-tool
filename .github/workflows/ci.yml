@@ -8,7 +8,18 @@ on:
 
 jobs:
   validate:
+    name: Validate (Node ${{ matrix.node-version }}, AI SDK ${{ matrix.ai-sdk-major }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - node-version: 20
+            ai-sdk-major: 6
+            ai-version: ^6.0.13
+          - node-version: 22
+            ai-sdk-major: 7
+            ai-version: ^7.0.0
 
     steps:
       - uses: actions/checkout@v4
@@ -19,11 +30,16 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
 
+      - name: Select AI SDK ${{ matrix.ai-sdk-major }}
+        env:
+          AI_VERSION: ${{ matrix.ai-version }}
+        run: node -e "const fs=require('node:fs'),p=require('./package.json');p.devDependencies.ai=process.env.AI_VERSION;fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
+
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Lint
         run: pnpm lint
@@ -39,5 +55,3 @@ jobs:
 
       - name: Test
         run: pnpm test:run
-
-      

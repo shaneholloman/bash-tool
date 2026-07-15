@@ -1,13 +1,16 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { ToolExecutionOptions } from "ai";
 import { afterEach, assert, beforeEach, describe, expect, it } from "vitest";
 import { createBashTool } from "./tool.js";
 import type { CommandResult } from "./types.js";
 
 // AI SDK tool execute requires (args, options) - we provide test options
-const opts: ToolExecutionOptions = { toolCallId: "test", messages: [] };
+const opts = {
+  context: {},
+  toolCallId: "test",
+  messages: [],
+};
 
 /**
  * Integration tests that verify the documented bash commands work correctly
